@@ -40,7 +40,7 @@ set(CPP_ITESTS
         test-long-run
         
         testMKbootNAND_FFT_v2
-        MK-TFHE_Packing
+        mK_Tfhe_Packing
         )
 
 set(C_ITESTS
