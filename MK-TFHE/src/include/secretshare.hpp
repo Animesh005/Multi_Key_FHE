@@ -33,11 +33,9 @@ private:
     std::map<std::pair<int, int>, int> ncr_cacheT;	            /* Stores <<n, r>: C(n, r)> */
     std::map<std::pair<int, int>, TLweKey*> shared_key_repo;	/* Stores <<party_id, group_id>: key_share> */
 
+public:
     void distributeShares(ublas::matrix<int>& S, int t, int k, int p, TLweParams *params);
     void shareSecret(int t, int p, TLweKey *key, TLweParams *params);
-
-
-public:
     TFheGateBootstrappingSecretKeySet *sk;
     TFheGateBootstrappingCloudKeySet *bk;    
     void GetShareSet(int party, MKKeyShare *share);    

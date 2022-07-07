@@ -64,8 +64,8 @@ if (ENABLE_SPQLIOS_FMA)
 list(APPEND FFT_PROCESSORS "spqlios-fma")
 endif(ENABLE_SPQLIOS_FMA)
 
-include_directories("include")
-file(GLOB TFHE_HEADERS include/*.h)
+include_directories("include" "/opt/OpenBLAS/include")
+file(GLOB TFHE_HEADERS include/*.h /opt/OpenBLAS/include/cblas.h)
 
 install(FILES ${TFHE_HEADERS}
     DESTINATION include/tfhe

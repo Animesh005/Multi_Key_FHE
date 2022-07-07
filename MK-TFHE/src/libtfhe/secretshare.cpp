@@ -52,9 +52,9 @@ ublas::matrix<int> optOrCombineT(int k, int t, int l, ublas::matrix<int> &A){
 	F = ublas::zero_matrix<int>(A.size1(), k);
 	R = ublas::zero_matrix<int>(A.size1(), A.size2() - k);
 
-	for (int r = 0; r < A.size1(); r++){
-		for (int c = 0; c < A.size2(); c++){
-			if (c < k){
+	for (uint r = 0; r < A.size1(); r++){
+		for (uint c = 0; c < A.size2(); c++){
+			if (c < (uint)k){
 				F(r, c) = A(r, c);
 			}else{
 				R(r, c - k) = A(r, c);
@@ -108,6 +108,10 @@ void multiply(ublas::matrix<int>& C, ublas::matrix<int>& A, ublas::matrix<int>& 
 	double *_B = (double *)malloc(k * n * sizeof(double));
 	double *_C = (double *)malloc(m * n * sizeof(double));
 
+	memset(_A, 0, m * k * sizeof(double));
+	memset(_B, 0, k * n * sizeof(double));
+	memset(_C, 0, m * n * sizeof(double));
+
 	for (int r = 0; r < m; r++)
 		for (int c = 0; c < k; c++)
 			_A[r * k + c] = A(r, c);
@@ -116,7 +120,6 @@ void multiply(ublas::matrix<int>& C, ublas::matrix<int>& A, ublas::matrix<int>& 
 		for (int c = 0; c < n; c++)
 			_B[r * n + c] = B(r, c);
 
-	memset(_C, 0, m * n * sizeof(double));
 
 	cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, m, n, k, 1.0, _A, k, _B, n, 0.0, _C, n);
 
@@ -313,4 +316,9 @@ void SecretSharing::GetShareSet(int party, MKKeyShare *share)
             share->shared_key_repo[pr.first.second] = pr.second;
         }
     }
+}
+
+TLweKey* MKKeyShare::GetShare(int group_id)
+{
+    return this->shared_key_repo[group_id];
 }

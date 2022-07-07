@@ -11,6 +11,7 @@
 #include "lweparams.h"
 #include "tlwe.h"
 #include "tgsw.h"
+#include "secretshare.hpp"
 
 
 
@@ -168,6 +169,17 @@ int32_t main(int32_t argc, char **argv) {
     MKRLweKeyGen(MKrlwekey);
     cout << "KeyGen MKrlwekey: DONE!" << endl;
 
+    SecretSharing *ss = new SecretSharing();
+    ss->shareSecret(3, 4, &(MKrlwekey->key[2]), RLWEparams);
+    auto share3 = new MKKeyShare();
+    ss->GetShareSet(3, share3);
+    auto share3_1 = share3->GetShare(1);
+
+    for (int i = 0; i < 1024; i++)
+      cout << share3_1->key[0].coefs[i] << " ";
+    cout << endl;
+
+    
     // LWE key extracted
     MKLweKey* MKextractedlwekey = new_MKLweKey(extractedLWEparams, MKparams);
     MKtLweExtractKey(MKextractedlwekey, MKrlwekey);

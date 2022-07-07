@@ -37,6 +37,8 @@ set(SRCS
     mkTFHEkeygen.cpp
     mkTFHEsamples.cpp
     mkTFHEfunctions.cpp
+
+    secretshare.cpp
     )
 
 
