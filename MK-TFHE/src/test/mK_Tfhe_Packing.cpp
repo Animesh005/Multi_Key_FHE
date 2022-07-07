@@ -574,7 +574,7 @@ int32_t main(int32_t argc, char **argv) {
       printf("%d ", temp_boot[i]);
     }
 
-
+    printf("\n");
 
 
     return 0;
