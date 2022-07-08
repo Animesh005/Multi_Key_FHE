@@ -156,7 +156,7 @@ int32_t main(int32_t argc, char **argv) {
     LweParams *extractedLWEparams = new_LweParams(n_extract, ks_stdev, max_stdev);
     TLweParams *RLWEparams = new_TLweParams(N, k, bk_stdev, max_stdev);
 
-    cout << "\nStarting key generation\n" << endl;
+    cout << "\nStarting key generation . . .\n" << endl;
     clock_t begin_KG = clock();
 
     // LWE key
@@ -168,16 +168,6 @@ int32_t main(int32_t argc, char **argv) {
     MKRLweKey* MKrlwekey = new_MKRLweKey(RLWEparams, MKparams);
     MKRLweKeyGen(MKrlwekey);
     cout << "KeyGen MKrlwekey: DONE!" << endl;
-
-    SecretSharing *ss = new SecretSharing();
-    ss->shareSecret(3, 4, &(MKrlwekey->key[2]), RLWEparams);
-    auto share3 = new MKKeyShare();
-    ss->GetShareSet(3, share3);
-    auto share3_1 = share3->GetShare(1);
-
-    for (int i = 0; i < 1024; i++)
-      cout << share3_1->key[0].coefs[i] << " ";
-    cout << endl;
 
     
     // LWE key extracted
@@ -199,6 +189,16 @@ int32_t main(int32_t argc, char **argv) {
     double time_KG = ((double) end_KG - begin_KG)/CLOCKS_PER_SEC;
     cout << "Finished key generation" << endl;
     cout << "Time for key generation: " << time_KG << " seconds" << endl;
+
+    // SecretSharing *ss = new SecretSharing();
+    // ss->shareSecret(2, 4, &(MKlwekey->key[0]), LWEparams);
+    // MKKeyShare* share = new MKKeyShare();;
+    // ss->GetShareSet(2, share);
+    // auto tempShare = share->GetShare(1);
+
+    // for (int i = 0; i < n; i++)
+    //   cout << tempShare->key[i] << " ";
+    // cout << endl;
 
 
     int32_t msg;
@@ -259,29 +259,6 @@ int32_t main(int32_t argc, char **argv) {
       }
     }
 
-    // generate secret matrix for party 0 for encryption
-    // Torus32 SecretMatrix_0[Psize][n];
-
-    // for (int l = 0; l < Psize; ++l)
-    // {
-    //   for (int j = 0; j < n; ++j)
-    //   {
-    //     SecretMatrix_0[l][j] = MKlwekey->key[0].key[j];
-    //   }
-    // }
-
-    // generate secret matrix for party 1 for encryption
-
-    // Torus32 SecretMatrix_1[Psize][n];
-
-    // for (int l = 0; l < Psize; ++l)
-    // {
-    //   for (int j = 0; j < n; ++j)
-    //   {
-    //     SecretMatrix_1[l][j] = MKlwekey->key[1].key[j];
-    //   }
-    // }
-
     // generate extended secret matrix for decryption
     Torus32 ExtSecretMatrix[Psize][parties*n];
 
@@ -302,13 +279,12 @@ int32_t main(int32_t argc, char **argv) {
     {
       for (int j = 0; j < n; ++j)
       {
-          cipher1->a[i*n +j] = uniformTorus32_distrib(generator);
+        cipher0->a[i*n +j] = uniformTorus32_distrib(generator);
       }
     }
 
     // multiply 'a' with secret matrix for msg 1
-    // Torus32 A0[Psize];
-    // Torus32 A1[Psize];
+
 
     Torus32 A[parties][Psize];
 
@@ -320,11 +296,6 @@ int32_t main(int32_t argc, char **argv) {
       }
     }
 
-    // for (int i=0; i < Psize; i++)
-    // {
-    //      A0[i]=0;
-    //      A1[i]=0;
-    // }
 
     for (int i=0; i < parties; i++)
     {
@@ -336,18 +307,6 @@ int32_t main(int32_t argc, char **argv) {
         }
       }
     }
-
-    // for (int i=0; i < Psize; i++){
-    //   for (int j=0; j < n; j++){
-    //       A0[i] += ( SecretMatrix_0[i][j] * cipher0->a[j]);
-    //   }
-    // }
-
-    // for (int i=0; i < Psize; i++){
-    //   for (int j=0; j < n; j++){
-    //       A1[i] += ( SecretMatrix_1[i][j] * cipher0->a[n + j]);
-    //   }
-    // }
 
     for (int i=0; i < parties; i++)
     {
@@ -369,12 +328,6 @@ int32_t main(int32_t argc, char **argv) {
       }
     }
 
-    // for (int i=0; i < Psize; i++)
-    // {
-    //      A0[i]=0;
-    //      A1[i]=0;
-    // }
-
     for (int i=0; i < parties; i++)
     {
       for (int l=0; l < Psize; l++)
@@ -385,18 +338,6 @@ int32_t main(int32_t argc, char **argv) {
         }
       }
     }
-
-    // for (int i=0; i < Psize; i++){
-    //   for (int j=0; j < n; j++){
-    //       A0[i] += ( SecretMatrix_0[i][j] * cipher1->a[j]);
-    //   }
-    // }
-
-    // for (int i=0; i < Psize; i++){
-    //   for (int j=0; j < n; j++){
-    //       A1[i] += ( SecretMatrix_1[i][j] * cipher1->a[n +j]);
-    //   }
-    // }
 
     for (int i=0; i < parties; i++)
     {
@@ -485,6 +426,133 @@ int32_t main(int32_t argc, char **argv) {
 
     cout << "\nDecryption: DONE!" << endl;
 
+
+    // threshold decryption ****************************************************************************
+
+    cout << "\nStarting thresholdization for the 1st ciphertext . . ." << endl;
+
+    // std::vector<int> subset{0, 1, 2};
+
+    SecretSharing *ss = new SecretSharing();
+    MKKeyShare* share;
+    LweKey* tempShare;
+    int th = 3;
+    int gropuID = 1;
+    // int gropuID = findGroupId(subset, th, parties);
+
+    Torus32 PartyShareMatrix[th][parties*n];
+
+    for (int party=0; party < parties; party++)
+    {
+      ss->shareSecret(th, parties, &(MKlwekey->key[party]), LWEparams);
+      share = new MKKeyShare();
+
+      for (int i=0; i < th; i++)
+      {
+        ss->GetShareSet(i+1, share);
+        tempShare = share->GetShare(gropuID);
+        for (int j=0; j < n; j++)
+        {
+          PartyShareMatrix[i][party*n + j] = tempShare->key[j];
+        }
+      }
+    }
+
+    // cout << endl;
+    // for (int i=0; i < th; i++)
+    // {
+    //   for (int j=0; j < (parties*n); j++)
+    //     cout << PartyShareMatrix[i][j] << " ";
+
+    //   cout << endl;
+    // }
+
+    // generate extended secret matrix for partial decryption
+    Torus32 ExtSecretMatrixShare[th][Psize][parties*n];
+
+    for (int party=0; party < th; party++)
+    {
+      for (int l = 0; l < Psize; ++l)
+      {
+        for (int j=0; j < (parties*n); j++)
+        {
+          ExtSecretMatrixShare[party][l][j] = PartyShareMatrix[party][j];
+        }
+      }
+    }
+
+    // generate partial decryptions for ciphertext 1
+
+    Torus32 PartDecArr[th][Psize];
+
+    for (int i=0; i < th; i++)
+    {
+      for (int l=0; l < Psize; l++)
+      {
+          PartDecArr[i][l] = gaussian32(0, alpha/8);
+      }
+    }
+
+
+    for (int i=0; i < th; i++)
+    {
+      for (int l=0; l < Psize; l++)
+      {
+        for (int j=0; j < (parties*n); j++)
+        {
+          PartDecArr[i][l] += ( ExtSecretMatrixShare[i][l][j] * cipher0->a[j]);
+        }
+      }
+    }
+
+    // cout << endl;
+    // for (int i=0; i < th; i++)
+    // {
+    //   for (int l=0; l < Psize; l++)
+    //     cout << PartDecArr[i][l] << " ";
+
+    //   cout << endl;
+    // }
+
+    // final decryption
+
+    for (int i=0; i < Psize; i++)
+    {
+         ExtA[i]=0;
+    }
+
+    for (int i=0; i < th; i++){
+      for (int l=0; l < Psize; l++){
+          if (i == 0)
+            ExtA[l] += (PartDecArr[i][l]);
+          else
+            ExtA[l] += - (PartDecArr[i][l]);
+      }
+    }
+
+    for (int l = 0; l < Psize; ++l)
+    {
+      temp0[l] = cipher0->b[l] - ExtA[l];
+
+      // printf(" \n%d, ", temp1[l]);
+      if (temp0[l] > 0)
+        dec_msg0[l] = 1;
+      else
+        dec_msg0[l] = 0;
+
+    }
+
+    printf("\n1st decrypted msg after final combination: ");
+    for (int l=0; l < Psize; l++)
+    {
+      printf(" %d", dec_msg0[l]);
+    }
+
+    cout << endl;
+
+    
+
+
     // homomorphic NAND operation
     int32_t out;
 
@@ -551,7 +619,7 @@ int32_t main(int32_t argc, char **argv) {
       temp_result_boots->a[j] = temp_result->a[j];
     }
 
-    cout << "\n\nStarting MK bootstrapping NAND FFT" << endl;
+    cout << "\n\nStarting MK bootstrapping NAND FFT . . ." << endl;
     clock_t begin_NAND_v2m2 = clock();
 
     for (int i=0; i < Psize; i++)
@@ -580,7 +648,7 @@ int32_t main(int32_t argc, char **argv) {
     cout << "Finished MK bootstrapping NAND FFT" << endl;
     cout << "Time per MK bootstrapping NAND FFT gate:  " << time_NAND_v2m2 << " seconds" << endl;
 
-    printf("\nDecryption NAND result after bootstrapping : \n");
+    printf("\nDecryption NAND result after bootstrapping : ");
     for (int i=0; i < Psize; i++)
     {
       printf("%d ", temp_boot[i]);

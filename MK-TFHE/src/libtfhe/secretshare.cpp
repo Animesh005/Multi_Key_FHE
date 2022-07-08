@@ -80,18 +80,18 @@ void buildDistributionMatrix(int t, int k, int p, ublas::matrix<int>& M){
 }
 
 /* rho is a random binary matrix with first k rows coming from the k rows of the secret key */
-ublas::matrix<int> buildRho(int k, int p, int e, TLweKey *key, ublas::matrix<int>& rho){
-	int N = key->params->N;
-	rho = ublas::matrix<int>(e, N);
+ublas::matrix<int> buildRho(int k, int p, int e, LweKey *key, ublas::matrix<int>& rho){
+	int n = key->params->n;
+	rho = ublas::matrix<int>(e, n);
 	for(int row = 0; row < k; row++){
-		for(int col = 0; col < N; col++){
-			rho(row,col) = key->key[row].coefs[col];
+		for(int col = 0; col < n; col++){
+			rho(row,col) = key->key[col];
 		}
 	}
 	std::default_random_engine gen;
     std::uniform_int_distribution<int> dist(0, 1);
 	for(int row = k; row < e; row++){
-		for(int col = 0; col < N; col++){
+		for(int col = 0; col < n; col++){
 			rho(row,col) = dist(gen);
 		}
 	} 
@@ -177,9 +177,9 @@ int findGroupId(std::vector<int> parties, int t, int p)
 
 
 /* Get and store the actual shares of each party */
-void SecretSharing::distributeShares(ublas::matrix<int>& S, int t, int k, int p, TLweParams *params)
+void SecretSharing::distributeShares(ublas::matrix<int>& S, int t, int k, int p, LweParams *params)
 {
-	int r = S.size1(), N = params->N;
+	int r = S.size1(), n = params->n;
 	int row = 1, group_id, row_count;
 	std::vector<int> parties;
 	while(row <= r){
@@ -187,10 +187,10 @@ void SecretSharing::distributeShares(ublas::matrix<int>& S, int t, int k, int p,
 		findParties(parties, group_id, t, p);
 		for(int it = 1; it <= t; it++){
 			row_count = row + (it - 1) * k;
-			TLweKey *key_share = new_TLweKey(params);
+			LweKey *key_share = new_LweKey(params);
 			for(int i = 0; i < k; i++){
-				for(int j = 0; j < N; j++){
-					key_share->key[i].coefs[j] = S(row_count + i - 1, j);
+				for(int j = 0; j < n; j++){
+					key_share->key[j] = S(row_count + i - 1, j);
 				}
 			}
 			shared_key_repo[{parties[it-1], group_id}] = key_share;
@@ -200,10 +200,10 @@ void SecretSharing::distributeShares(ublas::matrix<int>& S, int t, int k, int p,
 }
 
 /* Preprocess to share the secret key among p parties */
-void SecretSharing::shareSecret(int t, int p, TLweKey *key, TLweParams *params)
+void SecretSharing::shareSecret(int t, int p, LweKey *key, LweParams *params)
 {
-	int k = key->params->k;
-	int N = key->params->N;
+	int k = 1;
+	int n = key->params->n;
 
 	ublas::matrix<int> M;
 	buildDistributionMatrix(t, k, p, M);
@@ -213,64 +213,64 @@ void SecretSharing::shareSecret(int t, int p, TLweKey *key, TLweParams *params)
 	ublas::matrix<int> rho;
 	rho = buildRho(k, p, e, key, rho);
 
-	ublas::matrix<int> shares(d, N);
+	ublas::matrix<int> shares(d, n);
 	multiply(shares, M, rho);	/* shares = M . rho */
 
 	this->distributeShares(shares, t, k, p, params);
 }
 
 
-void MKKeyShare::PartialDecrypt(TLweSample* ciphertext, TLweParams* params, TorusPolynomial* partial_ciphertext, std::vector<int> parties, int t, int p, double sd)
-{
-	int k = params->k;
-	int N = params->N;
-	int group_id = findGroupId(parties, t, p);
-	auto part_key = shared_key_repo[group_id];
-	TorusPolynomial *partial_cipher = new_TorusPolynomial(N);
-	for(int j = 0; j < N; j++){
-		partial_cipher->coefsT[j] = 0;
-	}
-	TorusPolynomial *smudging_err = new_TorusPolynomial(N);
-	for(int j = 0; j < N; j++){
-		smudging_err->coefsT[j] = gaussian32(0, sd);
-	}
-	for(int j = 0; j < k; j++){
-		torusPolynomialAddMulR(partial_cipher, &part_key->key[j], &ciphertext->a[j]);
-	}
-	torusPolynomialAddTo(partial_cipher, smudging_err);
-	for(int j = 0; j < N; j++){
-		partial_ciphertext->coefsT[j] = partial_cipher->coefsT[j];
-	}
-}
+// void MKKeyShare::PartialDecrypt(TLweSample* ciphertext, LweParams* params, TorusPolynomial* partial_ciphertext, std::vector<int> parties, int t, int p, double sd)
+// {
+// 	int k = 1;
+// 	int n = params->n;
+// 	int group_id = findGroupId(parties, t, p);
+// 	auto part_key = shared_key_repo[group_id];
+// 	TorusPolynomial *partial_cipher = new_TorusPolynomial(N);
+// 	for(int j = 0; j < N; j++){
+// 		partial_cipher->coefsT[j] = 0;
+// 	}
+// 	TorusPolynomial *smudging_err = new_TorusPolynomial(N);
+// 	for(int j = 0; j < N; j++){
+// 		smudging_err->coefsT[j] = gaussian32(0, sd);
+// 	}
+// 	for(int j = 0; j < k; j++){
+// 		torusPolynomialAddMulR(partial_cipher, &part_key->key[j], &ciphertext->a[j]);
+// 	}
+// 	torusPolynomialAddTo(partial_cipher, smudging_err);
+// 	for(int j = 0; j < N; j++){
+// 		partial_ciphertext->coefsT[j] = partial_cipher->coefsT[j];
+// 	}
+// }
 
 
-int finalDecrypt(TLweSample* ciphertext, TorusPolynomial** partial_ciphertexts, TLweParams* params, std::vector<int> parties, int t, int p)
-{
-	int N = params->N;
-	int result_msg = 0;
-	TorusPolynomial* result = new_TorusPolynomial(N);
-	torusPolynomialCopy(result, ciphertext->b);
-	for(int i = 0; i < t; i++){
-		if(i == 0){
-			torusPolynomialSubTo(result, partial_ciphertexts[i]);
-		}
-		else{
-			torusPolynomialAddTo(result, partial_ciphertexts[i]);
-		}
-	}
-	// for (int i = 0; i < 1; i++){
-	// 	result_msg += (modSwitchFromTorus32(result->coefsT[i], MSIZE) << i);
-	// }
+// int finalDecrypt(TLweSample* ciphertext, TorusPolynomial** partial_ciphertexts, LweParams* params, std::vector<int> parties, int t, int p)
+// {
+// 	int N = params->n;
+// 	int result_msg = 0;
+// 	TorusPolynomial* result = new_TorusPolynomial(N);
+// 	torusPolynomialCopy(result, ciphertext->b);
+// 	for(int i = 0; i < t; i++){
+// 		if(i == 0){
+// 			torusPolynomialSubTo(result, partial_ciphertexts[i]);
+// 		}
+// 		else{
+// 			torusPolynomialAddTo(result, partial_ciphertexts[i]);
+// 		}
+// 	}
+// 	// for (int i = 0; i < 1; i++){
+// 	// 	result_msg += (modSwitchFromTorus32(result->coefsT[i], MSIZE) << i);
+// 	// }
 
-	result_msg = (result->coefsT[0] > 0) ? 1 : 0;
-    return result_msg;
-}
+// 	result_msg = (result->coefsT[0] > 0) ? 1 : 0;
+//     return result_msg;
+// }
 
 TFheGateBootstrappingParameterSet *initialize_gate_bootstrapping_params()
 {
     static const int32_t N = 1024;
     static const int32_t k = 1;
-    static const int32_t n = 1024;
+    static const int32_t n = 560;
     static const int32_t bk_l = 3;
     static const int32_t bk_Bgbit = 7;
     static const int32_t ks_basebit = 2;
@@ -318,7 +318,7 @@ void SecretSharing::GetShareSet(int party, MKKeyShare *share)
     }
 }
 
-TLweKey* MKKeyShare::GetShare(int group_id)
+LweKey* MKKeyShare::GetShare(int group_id)
 {
     return this->shared_key_repo[group_id];
 }
