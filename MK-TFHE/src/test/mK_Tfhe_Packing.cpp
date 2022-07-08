@@ -283,6 +283,14 @@ int32_t main(int32_t argc, char **argv) {
       }
     }
 
+    // for (int i = 0; i < parties; ++i)
+    // {
+    //   for (int j = 0; j < n; ++j)
+    //   {
+    //     cipher1->a[i*n +j] = uniformTorus32_distrib(generator);
+    //   }
+    // }
+
     // multiply 'a' with secret matrix for msg 1
 
 
@@ -328,6 +336,12 @@ int32_t main(int32_t argc, char **argv) {
       }
     }
 
+    // cout << "\nCipher 1: ";
+    // for (int i=0; i < parties*n; i++)
+    //   cout << " " << cipher1->a[i];
+
+    // cout << endl;
+
     for (int i=0; i < parties; i++)
     {
       for (int l=0; l < Psize; l++)
@@ -351,7 +365,7 @@ int32_t main(int32_t argc, char **argv) {
 
     cout << "\nEncryption: DONE!" << endl;
 
-    // decryption
+    // decryption *********************************************************************
     Torus32 ExtA[Psize];
 
     for (int i=0; i < Psize; i++)
@@ -429,16 +443,16 @@ int32_t main(int32_t argc, char **argv) {
 
     // threshold decryption ****************************************************************************
 
-    cout << "\nStarting thresholdization for the 1st ciphertext . . ." << endl;
+    cout << "\nStarting thresholdization on the 1st ciphertext . . ." << endl;
 
-    // std::vector<int> subset{0, 1, 2};
+    std::vector<int> subset{1, 2, 3};
 
     SecretSharing *ss = new SecretSharing();
     MKKeyShare* share;
     LweKey* tempShare;
     int th = 3;
-    int gropuID = 1;
-    // int gropuID = findGroupId(subset, th, parties);
+    // int gropuID = 1;
+    int gropuID = findGroupId(subset, th, parties);
 
     Torus32 PartyShareMatrix[th][parties*n];
 
@@ -526,7 +540,7 @@ int32_t main(int32_t argc, char **argv) {
           if (i == 0)
             ExtA[l] += (PartDecArr[i][l]);
           else
-            ExtA[l] += - (PartDecArr[i][l]);
+            ExtA[l] += -(PartDecArr[i][l]);
       }
     }
 
@@ -542,7 +556,7 @@ int32_t main(int32_t argc, char **argv) {
 
     }
 
-    printf("\n1st decrypted msg after final combination: ");
+    cout << "\n1st ciphertext -> " << th << "-out-of-" << parties << " threshold decryption: ";
     for (int l=0; l < Psize; l++)
     {
       printf(" %d", dec_msg0[l]);
@@ -655,6 +669,8 @@ int32_t main(int32_t argc, char **argv) {
     }
 
     printf("\n");
+
+    getchar();
 
 
     return 0;
