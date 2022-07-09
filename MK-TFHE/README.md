@@ -24,6 +24,7 @@ make
 To test (from build):
 ```
 ./test/testMKbootNAND_FFT_v2-spqlios-fma
+./test/mK_Tfhe_Packing-spqlios-fma
 ```
 
 
